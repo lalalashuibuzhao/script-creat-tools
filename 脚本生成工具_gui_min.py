@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+﻿# coding: utf-8
 # @Author: Fule
 # @Date:   2020-05-20 18:03:50
 # @Last Modified by:   Fule
@@ -7,7 +7,7 @@
 import os
 from pathlib import Path
 from secrets import token_hex
-from time import strftime
+import datetime
 
 import pandas as pd
 import PySimpleGUI as psg
@@ -24,6 +24,7 @@ data_return=''
 counter = 0
 script_prew = ''
 error = 'chushizhi'
+
 if Path(script_dir).is_dir():
     pass
     #print('目录存在')
@@ -48,7 +49,7 @@ def file_name(file_dir, exten):
 # 替换函数
 
 def replace_data_sing(table, template):
-    with open(template) as f:
+    with open(template, encoding = 'utf-8') as f:
         template = f.read()
         pd_table = pd.read_excel(table)
         dict_table_index = pd_table.to_dict('index')
@@ -63,7 +64,7 @@ def replace_data_sing(table, template):
 
 
 def replace_data_mult(table, template ,cheack):
-    with open(template) as f:
+    with open(template,encoding='utf-8') as f:
         template = f.read()
         pd_table = pd.read_excel(table)
         if cheack == True:
@@ -114,18 +115,20 @@ def writer(data, filename):
     with open(filename, 'a+') as f:
         f.write(data)
         return filename
-        
+
+# 文件名函数
+
 def script_name(excelname):
+    now = datetime.datetime.now().strftime('%Y%m%d%H%M%S%f')
     filename_nopath = os.path.split(excelname)[1] #分离路径和文件名
     filename_noextention  = os.path.splitext(filename_nopath)[0] #分离文件名和扩展名
     script_dir = os.path.join(os.getcwd(), 'script')
-    filename = os.path.join(script_dir, '%s.txt'%(filename_noextention))
-    if Path(filename).exists():
-        filename_noextention = os.path.splitext(filename_nopath)[0] +'_'+str(token_hex(nbytes=2))
-        filename = os.path.join(script_dir, '%s.txt'%(filename_noextention))
-        return filename
-    else:
-        return filename  
+    #filename = os.path.join(script_dir, '%s.txt'%now)
+    #if Path(filename).exists():
+        #filename_noextention = os.path.splitext(filename_nopath)[0] +'_'+str(token_hex(nbytes=2))
+    filename = os.path.join(script_dir, '%s.txt'%(filename_noextention+now))
+    return filename
+
 # 百分比函数
 
 
@@ -169,9 +172,7 @@ script_creat = [
 ]
 print_tab = [psg.Multiline(size=(50,20),key='view',tooltip='小提示:\n预览界面可以直接看到脚本的输出信息，\n建议单文件模式使用。')]
 tab1_layout = [
-    [psg.Frame('第一步', temp_input),
-     psg.Frame('第二步', table_input)
-     ],
+    [psg.Frame('第一步', temp_input),psg.Frame('第二步', table_input)],
     [psg.Frame('第三步', script_creat)],
     [psg.Frame('打印信息', print_out)],
 ]
@@ -279,21 +280,28 @@ while True:
                         else:
                             print('多文件模式启动\n')
                             event = '生成脚本'
+                    else:
+                        print('@filename检查正常')
+                        error = '文件名正常'
                 else:
                     data = replace_data_mult(excelname, template,False)
+                    create_dir_time = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+                    script_dir = os.path.join(script_dir,create_dir_time)
+                    os.mkdir(script_dir)
                     for data_return in data:
                         [i,temp_cache,filename] = data_return
-                        if filename == 'nan':
-                            filename = filename+ str(token_hex(nbytes=2))
-                            scriptname = os.path.join(script_dir,str(filename))
-                        else:                           
-                            scriptname = script_name(filename)
+                        #if filename == 'nan':
+                            #filename = filename+ str(token_hex(nbytes=2))
+                            #scriptname = os.path.join(script_dir,str(filename))
+                        #else: 
+                        filename = str(filename) +'.txt'     
+                        scriptname = os.path.join(script_dir,filename)
                         writer(temp_cache,scriptname)
                         gui.Element('percentage').update('{:.1%}'.format(i))
                         gui.Element('进度条').UpdateBar(i)
                         print(scriptname)
                         if i == 1:
-                            print('请在Script目录查看脚本！！\n')
+                            print('请在Script\%s目录查看脚本！！\n'%create_dir_time)
                             psg.popup_ok('生成完毕！')
                             i = 0
                             gui.Element('进度条').UpdateBar(i)
